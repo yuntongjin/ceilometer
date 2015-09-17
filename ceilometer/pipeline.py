@@ -421,11 +421,49 @@ class EventSink(Sink):
 
     NAMESPACE = 'ceilometer.event.publisher'
 
-    def publish_events(self, ctxt, events):
-        if events:
+    #def publish_events(self, ctxt, events):
+    #    if events:
+
+    def _transform_event(self, start, ctxt, event):
+        try:
+            for transformer in self.transformers[start:]:
+                events = transformer.handle_event(ctxt, event) #handle_event return event list
+                '''
+                if not events:
+                    LOG.debug(_(
+                        "No event from Pipeline %(pipeline)s:"
+                        "transformer %(trans)s") % ({'pipeline': self,
+                                                     'trans': transformer}))
+                    return
+                    '''
+            return events
+        except Exception as err:
+            # TODO(gordc): only use one log level.
+            LOG.warning(_("Pipeline %(pipeline)s: "
+                          "Exit after error from transformer "
+                          "%(trans)s for %(smp)s") % ({'pipeline': self,
+                                                       'trans': transformer,
+                                                       'smp': event}))
+            LOG.exception(err)
+
+    def _publish_events(self, start, ctxt, events):
+        #self._transform_event(ctxt, events)
+
+        transformed_events = []
+        if not self.transformers:
+            transformed_events = events
+        else:
+            for event in events:
+                tevent = self._transform_event(start, ctxt, event)
+                if tevent:
+                    for ievent in tevent:
+                        transformed_events.append(ievent)
+
+        if transformed_events:
+
             for p in self.publishers:
                 try:
-                    p.publish_events(ctxt, events)
+                    p.publish_events(ctxt, transformed_events)
                 except Exception:
                     LOG.exception(_("Pipeline %(pipeline)s: %(status)s"
                                     " after error from publisher %(pub)s") %
@@ -435,9 +473,24 @@ class EventSink(Sink):
                     if not self.multi_publish:
                         raise
 
+    def publish_events(self, ctxt, events):
+        self._publish_events(0, ctxt, events)
+
     def flush(self, ctxt):
         """Flush data after all events have been injected to pipeline."""
         pass
+        '''
+        for (i, transformer) in enumerate(self.transformers):
+            try:
+                self._publish_events(i + 1, ctxt,
+                                      list(transformer.flush(ctxt)))
+            except Exception as err:
+                LOG.warning(_(
+                    "Pipeline %(pipeline)s: Error flushing "
+                    "transformer %(trans)s") % ({'pipeline': self,
+                                                 'trans': transformer}))
+                LOG.exception(err)
+                '''
 
 
 class SampleSink(Sink):

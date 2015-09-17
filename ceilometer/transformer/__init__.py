@@ -54,6 +54,37 @@ class TransformerBase(object):
         """
         return []
 
+@six.add_metaclass(abc.ABCMeta)
+class EventTransformerBase(object):
+    """Base class for plugins that transform the event."""
+
+    def __init__(self, **kwargs):
+        """Setup transformer.
+
+        Each time a transformed is involved in a pipeline, a new transformer
+        instance is created and chained into the pipeline. i.e. transformer
+        instance is per pipeline. This helps if transformer need keep some
+        cache and per-pipeline information.
+
+        :param kwargs: The parameters that are defined in pipeline config file.
+        """
+        super(EventTransformerBase, self).__init__()
+
+    @abc.abstractmethod
+    def handle_event(self, context, event):
+        """Transform a event.
+
+        :param context: Passed from the data collector.
+        :param sample: A event.
+        """
+
+    def flush(self, context):
+        """Flush event cached previously.
+
+        :param context: Passed from the data collector.
+        """
+        return []
+
 
 class Namespace(object):
     """Encapsulates the namespace.

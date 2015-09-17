@@ -5,9 +5,89 @@ sources:
           - "*"
       sinks:
           - event_sink
+    - name: instance_create_bracketer_source
+      events:
+          - "compute.instance.create.start"
+          - "compute.instance.create.end"
+      sinks:
+          - instance_create_bracketer_sink
+    - name: network_create_bracketer_source
+      events:
+          - "network.create.start"
+          - "network.create.end"
+      sinks:
+          - network_create_bracketer_sink
+    - name: subnet_create_bracketer_source
+      events:
+          - "subnet.create.start"
+          - "subnet.create.end"
+      sinks:
+          - subnet_create_bracketer_sink
+    - name: port_create_bracketer_source
+      events:
+          - "port.create.start"
+          - "port.create.end"
+      sinks:
+          - port_create_bracketer_sink
 sinks:
     - name: event_sink
       transformers:
       triggers:
+      publishers:
+          - notifier://
+    - name: instance_create_bracketer_sink
+      transformers:
+          - name: "bracketer"
+            parameters:
+                source:
+                    - event_type: "compute.instance.create.start"
+                    - event_type: "compute.instance.create.end"
+                target:
+                     event_type: "compute.instance.create.latency"
+                     traits:
+                           name: "instance_create_latency"
+                           type: 3
+      publishers:
+          - notifier://
+    - name: network_create_bracketer_sink
+      transformers:
+          - name: "bracketer"
+            parameters:
+                source:
+                    - event_type: "network.create.start"
+                    - event_type: "network.create.end"
+                target:
+                     event_type: "network.create.latency"
+                     traits:
+                           name: "latency"
+                           type: 3
+      publishers:
+          - notifier://
+    - name: subnet_create_bracketer_sink
+      transformers:
+          - name: "bracketer"
+            parameters:
+                source:
+                    - event_type: "subnet.create.start"
+                    - event_type: "subnet.create.end"
+                target:
+                     event_type: "subnet.create.latency"
+                     traits:
+                           name: "latency"
+                           type: 3
+      publishers:
+          - notifier://
+    - name: port_create_bracketer_sink
+      transformers:
+          - name: "bracketer"
+            parameters:
+                source:
+                    - event_type: "port.create.start"
+                    - event_type: "port.create.end"
+                target:
+                     event_type: "port.create.latency"
+                     traits:
+                           name: "latency"
+                           type: 3
       publishers:
           - notifier://
